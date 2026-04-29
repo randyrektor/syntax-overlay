@@ -25,6 +25,9 @@ body{
   bottom:30px;
   left:15px;
   right:15px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
   transition:transform .5s cubic-bezier(.25,.25,.105,1.2),opacity .5s ease;
 }
 
@@ -32,6 +35,8 @@ body{
 .msg{
   position:relative;
   padding:22px 24px 22px 100px;
+  width:fit-content;
+  max-width:100%;
   background:#1a1a19;
   border:1px solid #2e2e2c;
   border-radius:6px;

@@ -388,10 +388,9 @@ body{
     wsUrl = params.get('server') || params.get('server2') || params.get('server3') || wsUrl;
     connect();
   } else {
-    /* Default: use both WSS + iframe for maximum compatibility */
+    /* Use BOTH methods for maximum compatibility */
     connect();
-    /* Uncomment below if you also want iframe P2P fallback: */
-    /* connectIframe(); */
+    connectIframe();
   }
 
 })();

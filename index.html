@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="Social Stream Ninja - Syntax.fm Theme">
+<title>Syntax.fm Chat Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  background:#0000;
+  overflow:hidden;
+  color:#edebe6;
+}
+
+/* ── CONTAINER ── */
+#output{
+  position:absolute;
+  bottom:30px;
+  left:15px;
+  right:15px;
+  transition:transform .5s cubic-bezier(.25,.25,.105,1.2),opacity .5s ease;
+}
+
+/* ── MESSAGE CARD ── */
+.msg{
+  position:relative;
+  padding:22px 24px 22px 100px;
+  background:#1a1a19;
+  border:1px solid #2e2e2c;
+  border-radius:6px;
+  box-shadow:0 2px 12px rgba(0,0,0,.25);
+  min-height:80px;
+  animation:slideUp .4s cubic-bezier(.33,1,.68,1) both;
+  margin-bottom:8px;
+}
+
+/* ── SOURCE LEFT BORDER ── */
+.msg[data-type="twitch"]{border-left:3px solid #9146ff}
+.msg[data-type="youtube"],.msg[data-type="youtubeshorts"]{border-left:3px solid #e24b4a}
+.msg[data-type="x"],.msg[data-type="twitter"]{border-left:3px solid #edebe6}
+.msg[data-type="kick"]{border-left:3px solid #53fc18}
+.msg[data-type="discord"]{border-left:3px solid #5865f2}
+.msg[data-type="facebook"]{border-left:3px solid #1877f2}
+.msg[data-type="tiktok"]{border-left:3px solid #fe2c55}
+
+/* ── AVATAR ── */
+.avatar-wrap{
+  position:absolute;
+  top:0;left:-1px;
+  width:80px;height:80px;
+  background:#242423;
+  border:1px solid #2e2e2c;
+  border-radius:6px;
+  padding:2px;
+  z-index:3;
+}
+.avatar-wrap img{
+  width:100%;height:100%;
+  object-fit:cover;
+  border-radius:5px;
+  display:block;
+}
+
+/* ── NAME TAG ── */
+.name-tag{
+  position:absolute;
+  top:-14px;left:70px;
+  background:#242423;
+  border:1px solid #2e2e2c;
+  border-radius:4px;
+  padding:5px 12px;
+  font-family:'Space Mono',monospace;
+  font-weight:700;
+  font-size:14px;
+  color:#f1c40f;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  white-space:nowrap;
+  z-index:4;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+/* Source-tinted name colors */
+.msg[data-type="twitch"] .name-tag{color:#c4a2ff;border-color:#3d2870;background:#1f1633}
+.msg[data-type="youtube"] .name-tag,.msg[data-type="youtubeshorts"] .name-tag{color:#f09595;border-color:#501313;background:#2a1212}
+.msg[data-type="x"] .name-tag,.msg[data-type="twitter"] .name-tag{color:#edebe6}
+.msg[data-type="kick"] .name-tag{color:#7bff50;border-color:#1a4010;background:#122a0c}
+.msg[data-type="discord"] .name-tag{color:#98a2f7;border-color:#2a2f6b;background:#181b3d}
+.msg[data-type="facebook"] .name-tag{color:#6aabf7;border-color:#0c3470;background:#0c1a33}
+.msg[data-type="tiktok"] .name-tag{color:#ff6b8a;border-color:#5c1128;background:#2a0c16}
+
+/* Source-tinted avatars */
+.msg[data-type="twitch"] .avatar-wrap{border-color:#3d2870}
+.msg[data-type="youtube"] .avatar-wrap,.msg[data-type="youtubeshorts"] .avatar-wrap{border-color:#501313}
+
+.source-badge{
+  font-family:'Space Mono',monospace;
+  font-size:11px;
+  font-weight:400;
+  color:#6b6963;
+  letter-spacing:.02em;
+}
+
+/* ── MESSAGE TEXT ── */
+.msg-text{
+  font-size:28px;
+  font-weight:400;
+  line-height:1.45;
+  letter-spacing:-.01em;
+  color:#edebe6;
+  word-break:break-word;
+}
+.msg-text img,.msg-text svg{
+  height:38px;
+  vertical-align:middle;
+  object-fit:contain;
+  margin:0 2px;
+}
+.msg-text a{color:#2dd4bf;text-decoration:none}
+
+/* ── DONATION ── */
+.dono-badge{
+  display:inline-block;
+  background:#f1c40f;
+  color:#111110;
+  font-family:'Space Mono',monospace;
+  font-weight:700;
+  font-size:14px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  padding:4px 10px;
+  border-radius:4px;
+  margin-top:8px;
+}
+
+/* ── TIMESTAMP ── */
+.timestamp{
+  position:absolute;
+  bottom:-10px;right:12px;
+  font-family:'Space Mono',monospace;
+  font-size:10px;
+  color:#6b6963;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  z-index:4;
+}
+
+/* ── CONTENT IMAGE ── */
+.content-img{
+  max-width:40%;
+  max-height:200px;
+  border-radius:6px;
+  border:1px solid #2e2e2c;
+  margin-top:8px;
+  display:block;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes slideUp{
+  0%{opacity:0;transform:translateY(16px)}
+  100%{opacity:1;transform:translateY(0)}
+}
+.msg-exit{
+  opacity:0;
+  transform:translateY(40px);
+  transition:all .5s ease-in-out;
+}
+
+/* ── EMPTY STATE ── */
+#output:empty{display:none}
+</style>
+</head>
+<body>
+<div id="output"></div>
+<script>
+(function(){
+  'use strict';
+
+  /* ── CONFIG ── */
+  var featuredMode = true; /* true = only show clicked/featured messages; false = show all */
+  var showTimestamp = true;
+  var maxStacked = 1; /* set >1 for stacked mode */
+
+  /* ── URL PARAMS ── */
+  var params = new URLSearchParams(location.search);
+  var session = params.get('session') || params.get('s') || params.get('id') || 'test';
+  if (params.has('all')) featuredMode = false;
+  if (params.has('stacked') || params.has('stack')) maxStacked = parseInt(params.get('stacked') || params.get('stack')) || 5;
+  var showtime = parseInt(params.get('showtime')) || 0;
+
+  var sourceLabels = {
+    twitch:'#twitch',youtube:'#youtube',youtubeshorts:'#shorts',
+    kick:'#kick',discord:'#discord',tiktok:'#tiktok',
+    facebook:'#facebook',instagram:'#instagram',
+    x:'#x',twitter:'#twitter'
+  };
+
+  var output = document.getElementById('output');
+
+  function getTime(){
+    var d=new Date(),h=d.getHours(),m=d.getMinutes();
+    return(h%12||12)+':'+(m<10?'0':'')+m+(h>=12?'pm':'am');
+  }
+
+  function esc(s){
+    if(!s)return'';
+    var d=document.createElement('div');
+    d.textContent=s;
+    return d.innerHTML;
+  }
+
+  function renderMessage(data){
+    if(!data)return;
+    if(!data.chatmessage && !data.chatname && !data.contentimg && !data.hasDonation) return;
+
+    var type = (data.type||'').toLowerCase();
+    var name = data.chatname||'';
+    var msg = data.chatmessage||'';
+    var img = data.chatimg||'';
+    var srcLabel = sourceLabels[type]||'';
+
+    /* Build name display: _NAME() #source */
+    var nameClean = esc(name).replace(/\s+/g,'_').toUpperCase();
+    var nameDisplay = nameClean ? '_'+nameClean+'()' : '';
+
+    /* Avatar */
+    var avatarUrl = img || 'https://socialstream.ninja/sources/images/unknown.png';
+
+    /* Donation */
+    var donoHtml = '';
+    if(data.hasDonation){
+      donoHtml = '<div class="dono-badge">'+(data.title?esc(data.title)+': ':'')+esc(data.hasDonation)+'</div>';
+    }
+
+    /* Content image */
+    var contentHtml = '';
+    if(data.contentimg){
+      contentHtml = '<img class="content-img" src="'+data.contentimg+'" onerror="this.style.display=\'none\'">';
+    }
+
+    /* Membership */
+    if(data.membership && !donoHtml){
+      donoHtml = '<div class="dono-badge" style="background:#242423;color:#f1c40f;border:1px solid #2e2e2c">'+esc(data.membership)+'</div>';
+    }
+
+    var el = document.createElement('div');
+    el.className = 'msg';
+    el.setAttribute('data-type', type);
+
+    el.innerHTML =
+      '<div class="avatar-wrap"><img src="'+avatarUrl+'" onerror="this.src=\'https://socialstream.ninja/sources/images/unknown.png\'"></div>'+
+      (nameDisplay ? '<div class="name-tag">'+nameDisplay+(srcLabel?'<span class="source-badge">'+srcLabel+'</span>':'')+'</div>' : '')+
+      '<div class="msg-text">'+msg+'</div>'+
+      donoHtml+
+      contentHtml+
+      (showTimestamp ? '<span class="timestamp">live &times; '+getTime()+'</span>' : '');
+
+    /* Stacking or single */
+    if(maxStacked <= 1){
+      output.innerHTML = '';
+      output.appendChild(el);
+    } else {
+      output.appendChild(el);
+      var msgs = output.querySelectorAll('.msg');
+      while(msgs.length > maxStacked){
+        var old = msgs[0];
+        old.classList.add('msg-exit');
+        setTimeout(function(e){if(e.parentNode)e.parentNode.removeChild(e)},500,old);
+        msgs = output.querySelectorAll('.msg:not(.msg-exit)');
+      }
+    }
+
+    /* Auto-hide */
+    if(showtime){
+      setTimeout(function(){
+        el.classList.add('msg-exit');
+        setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el)},500);
+      }, showtime);
+    }
+  }
+
+  function clearOutput(){
+    var msgs = output.querySelectorAll('.msg');
+    msgs.forEach(function(m){
+      m.classList.add('msg-exit');
+      setTimeout(function(){if(m.parentNode)m.parentNode.removeChild(m)},500);
+    });
+  }
+
+  function processData(raw){
+    var data;
+    try{
+      data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    }catch(e){return}
+
+    if(data && 'overlayNinja' in data) data = data.overlayNinja;
+
+    if(data && 'content' in data){
+      if(data.content){
+        renderMessage(typeof data.content==='string'?JSON.parse(data.content):data.content);
+      } else {
+        clearOutput();
+      }
+      return;
+    }
+    if(data && data.action==='content' && 'value' in data){
+      if(data.value){
+        var v = typeof data.value==='string'?JSON.parse(data.value):data.value;
+        if(v && v.chatmessage) renderMessage(v);
+      } else {
+        clearOutput();
+      }
+      return;
+    }
+    if(data && 'chatmessage' in data){
+      renderMessage(data);
+      return;
+    }
+    if(data && 'contents' in data){
+      if(data.contents) renderMessage(data.contents);
+      else clearOutput();
+    }
+  }
+
+  /* ── WEBSOCKET CONNECTION ── */
+  var wsUrl = params.has('localserver') ? 'ws://127.0.0.1:3000' : 'wss://io.socialstream.ninja';
+  var inChannel = featuredMode ? 2 : 1;
+  var outChannel = 3;
+  var conCon = 1;
+  var reconnectTimer = null;
+
+  function connect(){
+    if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null}
+    var ws = new WebSocket(wsUrl);
+
+    ws.onopen = function(){
+      conCon = 1;
+      ws.send(JSON.stringify({join:session, in:inChannel, out:outChannel}));
+    };
+
+    ws.onmessage = function(e){
+      if(!e.data) return;
+      try{
+        var d = typeof e.data==='string' ? JSON.parse(e.data) : e.data;
+        processData(d);
+      }catch(err){
+        console.error('Parse error:',err);
+      }
+    };
+
+    ws.onclose = function(){
+      reconnectTimer = setTimeout(function(){
+        conCon++;
+        connect();
+      }, 100*conCon);
+    };
+
+    ws.onerror = function(){ws.close()};
+  }
+
+  /* ── IFRAME FALLBACK (P2P via VDO.Ninja) ── */
+  function connectIframe(){
+    var iframe = document.createElement('iframe');
+    iframe.src = 'https://vdo.socialstream.ninja/?ln&password=false&salt=vdo.ninja&label=overlay&exclude='+session+'&scene&novideo&noaudio&cleanoutput&room='+session;
+    iframe.style.cssText = 'width:0;height:0;position:fixed;left:-100px;top:-100px';
+    iframe.allow = 'microphone';
+    document.body.appendChild(iframe);
+
+    window.addEventListener('message', function(e){
+      if(e.source !== iframe.contentWindow) return;
+      if(e.data && e.data.dataReceived && e.data.dataReceived.overlayNinja){
+        var d = e.data.dataReceived.overlayNinja;
+        if(d && !('response' in d)){
+          processData({contents:d});
+        }
+      }
+    });
+  }
+
+  /* ── INIT ── */
+  if(params.has('server') || params.has('server2') || params.has('server3')){
+    wsUrl = params.get('server') || params.get('server2') || params.get('server3') || wsUrl;
+    connect();
+  } else {
+    /* Default: use both WSS + iframe for maximum compatibility */
+    connect();
+    /* Uncomment below if you also want iframe P2P fallback: */
+    /* connectIframe(); */
+  }
+
+})();
+</script>
+</body>
+</html>

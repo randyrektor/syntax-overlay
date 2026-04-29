@@ -14,6 +14,9 @@ body{
   background:#0000;
   overflow:hidden;
   color:#edebe6;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
 }
 
 /* ── CONTAINER ── */
@@ -99,6 +102,22 @@ body{
 .msg[data-type="twitch"] .avatar-wrap{border-color:#3d2870}
 .msg[data-type="youtube"] .avatar-wrap,.msg[data-type="youtubeshorts"] .avatar-wrap{border-color:#501313}
 
+.name-text{display:inline-block;vertical-align:middle}
+.badges-inline{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  margin-left:4px;
+  vertical-align:middle;
+}
+.chat-badge{
+  height:18px;
+  width:auto;
+  vertical-align:middle;
+  display:inline-block;
+  object-fit:contain;
+}
+
 .source-badge{
   font-family:'Space Mono',monospace;
   font-size:11px;
@@ -116,11 +135,22 @@ body{
   color:#edebe6;
   word-break:break-word;
 }
+.msg-text{font-style:normal}
+.msg-text :is(em,i,cite,var,dfn){font-style:normal}
 .msg-text img,.msg-text svg{
-  height:38px;
+  max-height:1.35em;
+  height:auto;
+  width:auto;
+  max-width:200px;
   vertical-align:middle;
   object-fit:contain;
   margin:0 2px;
+  display:inline-block;
+}
+.msg-text img.emote,.msg-text svg.emote,
+.msg-text img[class*=emote],.msg-text svg[class*=emote]{
+  max-height:1.5em;
+  max-width:1.5em;
 }
 .msg-text a{color:#2dd4bf;text-decoration:none}
 
@@ -137,18 +167,6 @@ body{
   padding:4px 10px;
   border-radius:4px;
   margin-top:8px;
-}
-
-/* ── TIMESTAMP ── */
-.timestamp{
-  position:absolute;
-  bottom:-10px;right:12px;
-  font-family:'Space Mono',monospace;
-  font-size:10px;
-  color:#6b6963;
-  letter-spacing:.04em;
-  text-transform:uppercase;
-  z-index:4;
 }
 
 /* ── CONTENT IMAGE ── */
@@ -184,12 +202,12 @@ body{
 
   /* ── CONFIG ── */
   var featuredMode = true; /* true = only show clicked/featured messages; false = show all */
-  var showTimestamp = true;
   var maxStacked = 1; /* set >1 for stacked mode */
 
   /* ── URL PARAMS ── */
   var params = new URLSearchParams(location.search);
-  var session = params.get('session') || params.get('s') || params.get('id') || 'test';
+  var session = params.get('session') || params.get('s') || params.get('id') || params.get('room') || params.get('roomid') || 'test';
+  var iframePassword = params.get('password') || params.get('pass') || params.get('pw') || 'false';
   if (params.has('all')) featuredMode = false;
   if (params.has('stacked') || params.has('stack')) maxStacked = parseInt(params.get('stacked') || params.get('stack')) || 5;
   var showtime = parseInt(params.get('showtime')) || 0;
@@ -203,11 +221,6 @@ body{
 
   var output = document.getElementById('output');
 
-  function getTime(){
-    var d=new Date(),h=d.getHours(),m=d.getMinutes();
-    return(h%12||12)+':'+(m<10?'0':'')+m+(h>=12?'pm':'am');
-  }
-
   function esc(s){
     if(!s)return'';
     var d=document.createElement('div');
@@ -215,9 +228,51 @@ body{
     return d.innerHTML;
   }
 
+  function safeCssColor(c){
+    if(!c||typeof c!=='string')return'';
+    var t=c.trim();
+    if(t.length>120)return'';
+    if(/[<>'"`;\\]|url\s*\(/i.test(t))return'';
+    return t;
+  }
+
+  function escUrl(s){
+    if(!s||typeof s!=='string')return'';
+    try{
+      var abs=s.indexOf('//')===0?(location.protocol||'https:')+s:s;
+      var u=new URL(abs, location.href);
+      if(u.protocol!=='http:'&&u.protocol!=='https:')return'';
+      return u.href.replace(/"/g,'&quot;');
+    }catch(e){return''}
+  }
+
+  function renderBadgesHtml(chatbadges){
+    if(!chatbadges||!Array.isArray(chatbadges))return'';
+    var parts=[];
+    chatbadges.forEach(function(badge){
+      if(typeof badge==='string'&&badge){
+        var u=escUrl(badge);
+        if(u)parts.push('<img class="chat-badge" src="'+u+'" alt="">');
+      }else if(badge&&typeof badge==='object'){
+        if(badge.type==='img'&&badge.src){
+          var su=escUrl(badge.src);
+          if(su)parts.push('<img class="chat-badge" src="'+su+'" alt="">');
+        }else if(badge.type==='svg'&&badge.html){
+          parts.push(badge.html);
+        }else if(badge.src){
+          var s2=escUrl(badge.src);
+          if(s2)parts.push('<img class="chat-badge" src="'+s2+'" alt="">');
+        }
+      }
+    });
+    if(!parts.length)return'';
+    return '<span class="badges-inline">'+parts.join('')+'</span>';
+  }
+
   function renderMessage(data){
     if(!data)return;
-    if(!data.chatmessage && !data.chatname && !data.contentimg && !data.hasDonation) return;
+    var donationVal = data.hasDonation || data.donation;
+    if(!data.chatmessage && !data.chatname && !data.contentimg && !donationVal && !data.membership) return;
 
     var type = (data.type||'').toLowerCase();
     var name = data.chatname||'';
@@ -228,14 +283,18 @@ body{
     /* Build name display: _NAME() #source */
     var nameClean = esc(name).replace(/\s+/g,'_').toUpperCase();
     var nameDisplay = nameClean ? '_'+nameClean+'()' : '';
+    var nc = safeCssColor(data.nameColor);
+    var nameColorStyle = nc ? ' style="color:'+nc+'"' : '';
+    var tc = safeCssColor(data.textColor);
+    var badgesHtml = renderBadgesHtml(data.chatbadges);
 
     /* Avatar */
     var avatarUrl = img || 'https://socialstream.ninja/sources/images/unknown.png';
 
     /* Donation */
     var donoHtml = '';
-    if(data.hasDonation){
-      donoHtml = '<div class="dono-badge">'+(data.title?esc(data.title)+': ':'')+esc(data.hasDonation)+'</div>';
+    if(donationVal){
+      donoHtml = '<div class="dono-badge">'+(data.title?esc(data.title)+': ':'')+esc(String(donationVal))+'</div>';
     }
 
     /* Content image */
@@ -255,11 +314,10 @@ body{
 
     el.innerHTML =
       '<div class="avatar-wrap"><img src="'+avatarUrl+'" onerror="this.src=\'https://socialstream.ninja/sources/images/unknown.png\'"></div>'+
-      (nameDisplay ? '<div class="name-tag">'+nameDisplay+(srcLabel?'<span class="source-badge">'+srcLabel+'</span>':'')+'</div>' : '')+
-      '<div class="msg-text">'+msg+'</div>'+
+      (nameDisplay ? '<div class="name-tag"><span class="name-text"'+nameColorStyle+'>'+nameDisplay+'</span>'+badgesHtml+(srcLabel?'<span class="source-badge">'+srcLabel+'</span>':'')+'</div>' : (badgesHtml||srcLabel ? '<div class="name-tag">'+badgesHtml+(srcLabel?'<span class="source-badge">'+srcLabel+'</span>':'')+'</div>' : ''))+
+      '<div class="msg-text"'+(tc?' style="color:'+tc+'"':'')+'>'+msg+'</div>'+
       donoHtml+
-      contentHtml+
-      (showTimestamp ? '<span class="timestamp">live &times; '+getTime()+'</span>' : '');
+      contentHtml;
 
     /* Stacking or single */
     if(maxStacked <= 1){
@@ -312,7 +370,7 @@ body{
     if(data && data.action==='content' && 'value' in data){
       if(data.value){
         var v = typeof data.value==='string'?JSON.parse(data.value):data.value;
-        if(v && v.chatmessage) renderMessage(v);
+        if(v && (v.chatmessage || v.chatname || v.contentimg || v.hasDonation || v.donation || v.membership)) renderMessage(v);
       } else {
         clearOutput();
       }
@@ -367,7 +425,7 @@ body{
   /* ── IFRAME FALLBACK (P2P via VDO.Ninja) ── */
   function connectIframe(){
     var iframe = document.createElement('iframe');
-    iframe.src = 'https://vdo.socialstream.ninja/?ln&password=false&salt=vdo.ninja&label=overlay&exclude='+session+'&scene&novideo&noaudio&cleanoutput&room='+session;
+    iframe.src = 'https://vdo.socialstream.ninja/?ln&password='+encodeURIComponent(iframePassword)+'&salt=vdo.ninja&label=overlay&exclude='+encodeURIComponent(session)+'&scene&novideo&noaudio&cleanoutput&room='+encodeURIComponent(session);
     iframe.style.cssText = 'width:0;height:0;position:fixed;left:-100px;top:-100px';
     iframe.allow = 'microphone';
     document.body.appendChild(iframe);

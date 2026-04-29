@@ -72,6 +72,7 @@ body{
 .name-tag{
   position:absolute;
   top:-14px;left:70px;
+  max-width:calc(100% - 85px);
   background:#242423;
   border:1px solid #2e2e2c;
   border-radius:4px;
@@ -109,13 +110,39 @@ body{
   gap:4px;
   margin-left:4px;
   vertical-align:middle;
+  flex-shrink:0;
+  max-height:22px;
 }
 .chat-badge{
   height:18px;
   width:auto;
+  max-height:18px;
   vertical-align:middle;
   display:inline-block;
   object-fit:contain;
+}
+/* Raw SVG badges ship huge width/height attrs; constrain like upstream themes */
+.badge-svg-wrap{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  height:18px;
+  max-width:96px;
+  line-height:0;
+}
+.badge-svg-wrap svg{
+  height:18px;
+  width:auto;
+  max-width:100%;
+  display:block;
+}
+.badges-inline>svg{
+  height:18px;
+  width:auto;
+  max-height:18px;
+  max-width:96px;
+  display:block;
 }
 
 .source-badge{
@@ -258,7 +285,7 @@ body{
           var su=escUrl(badge.src);
           if(su)parts.push('<img class="chat-badge" src="'+su+'" alt="">');
         }else if(badge.type==='svg'&&badge.html){
-          parts.push(badge.html);
+          parts.push('<span class="badge-svg-wrap">'+badge.html+'</span>');
         }else if(badge.src){
           var s2=escUrl(badge.src);
           if(s2)parts.push('<img class="chat-badge" src="'+s2+'" alt="">');

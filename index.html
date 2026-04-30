@@ -278,10 +278,12 @@ body{
   0%{opacity:0;transform:translateY(16px)}
   100%{opacity:1;transform:translateY(0)}
 }
+/* Cancel slideUp so opacity/transform are not animation-owned; otherwise exit snaps with no transition. */
 .msg-exit{
+  animation:none;
   opacity:0;
   transform:translateY(40px);
-  transition:all .5s ease-in-out;
+  transition:opacity .5s ease-in-out,transform .5s ease-in-out;
 }
 
 /* ── EMPTY STATE ── */

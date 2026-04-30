@@ -62,6 +62,7 @@ body{
 .name-tag{
   position:absolute;
   top:-14px;left:70px;
+  width:max-content;
   max-width:calc(100% - 85px);
   background:#1a1918;
   border:2px solid #5c5a55;
@@ -73,15 +74,17 @@ body{
   color:#ffd54a;
   text-transform:uppercase;
   letter-spacing:.04em;
-  white-space:nowrap;
   z-index:4;
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
   gap:6px;
   box-shadow:1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09,3px 3px 0 0 #0a0a09,4px 4px 0 0 #0a0a09;
 }
 .msg[data-type="twitch"] .name-tag{color:#e4d4ff;border-color:#8b6fe6;background:#120a24;box-shadow:1px 1px 0 0 #2d1566,2px 2px 0 0 #2d1566,3px 3px 0 0 #2d1566,4px 4px 0 0 #2d1566}
-.name-text{display:inline-block;vertical-align:middle}
+.name-text{display:inline-block;vertical-align:middle;white-space:nowrap}
+.badges-inline{display:inline-flex;align-items:center;gap:4px;flex-shrink:0;max-height:22px}
+.chat-badge{height:18px;width:auto;max-height:18px;object-fit:contain;display:inline-block;vertical-align:middle}
 .source-badge{
   font-family:'Space Mono',monospace;
   font-size:11px;
@@ -118,7 +121,8 @@ body{
       <img src="https://i.pravatar.cc/160?u=syntaxdemo" width="160" height="160" alt="">
     </div>
     <div class="name-tag">
-      <span class="name-text">_WESBOS()</span>
+      <span class="name-text">_NEWGUEST()</span>
+      <span class="badges-inline"><img class="chat-badge" src="https://static-cdn.jtvnw.net/badges/v1/5527c58c-fb7d-422d-b71b-f309dcb85cc1/1" alt=""><img class="chat-badge" src="https://static-cdn.jtvnw.net/badges/v1/b817aba4-fad8-49e2-b88a-7cc744dfb6f0/1" alt=""></span>
       <span class="source-badge">#twitch</span>
     </div>
     <div class="msg-text">Hey chat — 🫶 chunky shadows, no thin left stripe. Links look like <a href="#">this</a>.</div>

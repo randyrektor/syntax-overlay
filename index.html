@@ -116,6 +116,8 @@ body{
 .name-tag{
   position:absolute;
   top:-14px;left:70px;
+  /* max-content + max-width: background/border cover badges+source (abs pos shrink-fit was narrower). */
+  width:max-content;
   max-width:calc(100% - 85px);
   background:#1a1918;
   border:2px solid #5c5a55;
@@ -127,9 +129,9 @@ body{
   color:#ffd54a;
   text-transform:uppercase;
   letter-spacing:.04em;
-  white-space:nowrap;
   z-index:4;
   display:flex;
+  flex-wrap:wrap;
   align-items:center;
   gap:6px;
   box-shadow:1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09,3px 3px 0 0 #0a0a09,4px 4px 0 0 #0a0a09;
@@ -153,12 +155,11 @@ body{
 .msg[data-type="tiktok"] .avatar-wrap{border-color:#ff3d6d}
 .msg[data-type="x"] .avatar-wrap,.msg[data-type="twitter"] .avatar-wrap{border-color:#a8a6a1}
 
-.name-text{display:inline-block;vertical-align:middle}
+.name-text{display:inline-block;vertical-align:middle;white-space:nowrap}
 .badges-inline{
   display:inline-flex;
   align-items:center;
   gap:4px;
-  margin-left:4px;
   vertical-align:middle;
   flex-shrink:0;
   max-height:22px;

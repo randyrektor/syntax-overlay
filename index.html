@@ -295,8 +295,9 @@ body{
   var maxStacked = 1; /* set >1 for stacked mode */
 
   /* ── URL PARAMS ── */
+  /* Pairs with featured UI, e.g. https://beta.socialstream.ninja/featured.html?session=… */
   var params = new URLSearchParams(location.search);
-  var session = params.get('session') || params.get('s') || params.get('id') || params.get('room') || params.get('roomid') || 'test';
+  var session = params.get('session') || params.get('s') || params.get('id') || params.get('room') || params.get('roomid') || '5mCxiEfhXc';
   var iframePassword = params.get('password') || params.get('pass') || params.get('pw') || 'false';
   if (params.has('all')) featuredMode = false;
   if (params.has('stacked') || params.has('stack')) maxStacked = parseInt(params.get('stacked') || params.get('stack')) || 5;

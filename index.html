@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="Social Stream Ninja - Syntax.fm Theme">
+<!-- Custom overlay for Social Stream Ninja: same session id as dock/featured pages. See script header for upstream contract. -->
 <title>Syntax.fm Chat Overlay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -278,8 +279,8 @@ body{
   0%{opacity:0;transform:translateY(16px)}
   100%{opacity:1;transform:translateY(0)}
 }
-/* Cancel slideUp so opacity/transform are not animation-owned; otherwise exit snaps with no transition. */
-.msg-exit{
+/* Exit: higher specificity than .msg (no !important). Cancels slideUp so transitions run. */
+.msg.msg-exit{
   animation:none;
   opacity:0;
   transform:translateY(40px);
@@ -295,6 +296,18 @@ body{
 <script>
 (function(){
   'use strict';
+
+  /*
+   * Upstream contract (steveseguin/social_stream):
+   * - Dock / featured UI: operators pick or queue messages; the hub relays them to browser sources on the session room.
+   * - featured.html WebSocket default: JSON.stringify({ join: roomID, out: 3, in: 2 }) for featured-only; alternate mode uses in: 1.
+   *   We mirror that with featuredMode ? 2 : 1 and out: 3.
+   * - Clears / empty featured: the socket sends JSON false or empty content; featured.html maps that to processData({ contents: false }).
+   *   We unwrap overlayNinja, treat false/null the same way, and accept { contents: … } / { content: … } / action content like upstream.
+   * - P2P path: featured.html loads vdo.socialstream.ninja with label=overlay&exclude=<session>&room=<session>; we match that when using the iframe fallback.
+   * - Field outline for each message: https://github.com/steveseguin/social_stream/blob/main/README.md#message-structure
+   * - Theme URL pattern (session query): e.g. themes/rainbowpuke/readme.md in the same repo.
+   */
 
   /* ── CONFIG ── */
   var featuredMode = true; /* true = only show clicked/featured messages; false = show all */
@@ -418,34 +431,61 @@ body{
 
     /* Stacking or single */
     if(maxStacked <= 1){
-      output.innerHTML = '';
-      output.appendChild(el);
+      var prev = output.querySelector('.msg');
+      if(prev){
+        animateMsgExit(prev, function(){
+          output.innerHTML = '';
+          output.appendChild(el);
+        });
+      } else {
+        output.innerHTML = '';
+        output.appendChild(el);
+      }
     } else {
       output.appendChild(el);
-      var msgs = output.querySelectorAll('.msg');
-      while(msgs.length > maxStacked){
-        var old = msgs[0];
-        old.classList.add('msg-exit');
-        setTimeout(function(e){if(e.parentNode)e.parentNode.removeChild(e)},500,old);
-        msgs = output.querySelectorAll('.msg:not(.msg-exit)');
+      while(output.querySelectorAll('.msg:not([data-anim-exit])').length > maxStacked){
+        animateMsgExit(output.querySelector('.msg:not([data-anim-exit])'));
       }
     }
 
     /* Auto-hide */
     if(showtime){
       setTimeout(function(){
-        el.classList.add('msg-exit');
-        setTimeout(function(){if(el.parentNode)el.parentNode.removeChild(el)},500);
+        animateMsgExit(el);
       }, showtime);
     }
   }
 
+  var MSG_EXIT_MS = 520;
+
+  /* Kill entrance animation, then exit on next frames so transition actually runs. */
+  function animateMsgExit(m, then){
+    if(!m||!m.parentNode) return;
+    if(m.classList.contains('msg-exit')){
+      if(typeof then==='function') setTimeout(then, MSG_EXIT_MS);
+      return;
+    }
+    if(m.getAttribute('data-anim-exit')) return;
+    m.setAttribute('data-anim-exit','1');
+    m.style.animation = 'none';
+    void m.offsetWidth;
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        m.classList.add('msg-exit');
+        setTimeout(function(){
+          if(typeof then==='function') then();
+          else if(m.parentNode) m.parentNode.removeChild(m);
+          m.removeAttribute('data-anim-exit');
+        }, MSG_EXIT_MS);
+      });
+    });
+  }
+
   function clearOutput(){
     var msgs = output.querySelectorAll('.msg');
-    msgs.forEach(function(m){
-      m.classList.add('msg-exit');
-      setTimeout(function(){if(m.parentNode)m.parentNode.removeChild(m)},500);
-    });
+    for(var i = 0; i < msgs.length; i++){
+      animateMsgExit(msgs[i]);
+    }
   }
 
   function processData(raw){

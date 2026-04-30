@@ -101,7 +101,6 @@ body{
   background:#1e1e1d;
   border:2px solid #4a4946;
   border-radius:50%;
-  padding:2px;
   overflow:hidden;
   z-index:3;
 }
@@ -116,9 +115,8 @@ body{
 .name-tag{
   position:absolute;
   top:-14px;left:70px;
-  /* max-content + max-width: background/border cover badges+source (abs pos shrink-fit was narrower). */
   width:max-content;
-  max-width:calc(100% - 85px);
+  max-width:none;
   background:#1a1918;
   border:2px solid #5c5a55;
   border-radius:6px;
@@ -130,11 +128,15 @@ body{
   text-transform:uppercase;
   letter-spacing:.04em;
   z-index:4;
+  box-shadow:1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09,3px 3px 0 0 #0a0a09,4px 4px 0 0 #0a0a09;
+}
+.name-tag-row{
   display:flex;
-  flex-wrap:wrap;
+  flex-direction:row;
+  flex-wrap:nowrap;
   align-items:center;
   gap:6px;
-  box-shadow:1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09,3px 3px 0 0 #0a0a09,4px 4px 0 0 #0a0a09;
+  white-space:nowrap;
 }
 
 /* Source-tinted name colors (higher contrast fg/bg) */
@@ -155,7 +157,7 @@ body{
 .msg[data-type="tiktok"] .avatar-wrap{border-color:#ff3d6d}
 .msg[data-type="x"] .avatar-wrap,.msg[data-type="twitter"] .avatar-wrap{border-color:#a8a6a1}
 
-.name-text{display:inline-block;vertical-align:middle;white-space:nowrap}
+.name-text{display:inline-block;vertical-align:middle;white-space:nowrap;flex-shrink:0}
 .badges-inline{
   display:inline-flex;
   align-items:center;
@@ -203,6 +205,7 @@ body{
   color:#c9c6bc;
   letter-spacing:.04em;
   opacity:1;
+  flex-shrink:0;
 }
 
 /* ── MESSAGE TEXT ── */
@@ -406,7 +409,7 @@ body{
 
     el.innerHTML =
       '<div class="avatar-wrap"><img src="'+avatarUrl+'" onerror="this.src=\'https://socialstream.ninja/sources/images/unknown.png\'"></div>'+
-      (nameDisplay ? '<div class="name-tag"><span class="name-text"'+nameColorStyle+'>'+nameDisplay+'</span>'+badgesHtml+(srcLabel?'<span class="source-badge">'+srcLabel+'</span>':'')+'</div>' : (badgesHtml||srcLabel ? '<div class="name-tag">'+badgesHtml+(srcLabel?'<span class="source-badge">'+srcLabel+'</span>':'')+'</div>' : ''))+
+      (nameDisplay ? '<div class="name-tag"><div class="name-tag-row"><span class="name-text"'+nameColorStyle+'>'+nameDisplay+'</span>'+badgesHtml+(srcLabel?'<span class="source-badge">'+srcLabel+'</span>':'')+'</div></div>' : (badgesHtml||srcLabel ? '<div class="name-tag"><div class="name-tag-row">'+badgesHtml+(srcLabel?'<span class="source-badge">'+srcLabel+'</span>':'')+'</div></div>' : ''))+
       '<div class="msg-text"'+(tc?' style="color:'+tc+'"':'')+'>'+msg+'</div>'+
       donoHtml+
       contentHtml;

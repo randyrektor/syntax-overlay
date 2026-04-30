@@ -452,7 +452,13 @@ body{
       data = typeof raw === 'string' ? JSON.parse(raw) : raw;
     }catch(e){return}
 
-    if(data && 'overlayNinja' in data) data = data.overlayNinja;
+    if(data && typeof data==='object' && 'overlayNinja' in data) data = data.overlayNinja;
+
+    /* Featured clear sends JSON false / null; all branches below use "data &&" and would skip. */
+    if(data===false||data===null){
+      clearOutput();
+      return;
+    }
 
     if(data && 'content' in data){
       if(data.content){
@@ -527,12 +533,11 @@ body{
 
     window.addEventListener('message', function(e){
       if(e.source !== iframe.contentWindow) return;
-      if(e.data && e.data.dataReceived && e.data.dataReceived.overlayNinja){
-        var d = e.data.dataReceived.overlayNinja;
-        if(d && !('response' in d)){
-          processData({contents:d});
-        }
-      }
+      var dr = e.data && e.data.dataReceived;
+      if(!dr||!('overlayNinja' in dr)) return;
+      var d = dr.overlayNinja;
+      if(d && typeof d==='object' && 'response' in d) return;
+      processData({contents:d});
     });
   }
 

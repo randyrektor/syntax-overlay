@@ -13,7 +13,7 @@ body{
   font-family:'Space Grotesk',system-ui,sans-serif;
   background:#0000;
   overflow:hidden;
-  color:#edebe6;
+  color:#f7f6f2;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility;
@@ -31,45 +31,84 @@ body{
   transition:transform .5s cubic-bezier(.25,.25,.105,1.2),opacity .5s ease;
 }
 
-/* ── MESSAGE CARD ── */
+/* ── MESSAGE CARD (chunky solid shadow; no thin left accent) ── */
+/* Stepped 1px box-shadows = connected extrusion (fills rounded-corner gap vs one offset layer). */
 .msg{
   position:relative;
   padding:22px 24px 22px 100px;
   width:fit-content;
   max-width:100%;
-  background:#1a1a19;
-  border:1px solid #2e2e2c;
-  border-radius:6px;
-  box-shadow:0 2px 12px rgba(0,0,0,.25);
+  background:#141413;
+  border:2px solid #454441;
+  border-radius:8px;
+  box-shadow:
+    1px 1px 0 0 #050504,2px 2px 0 0 #050504,3px 3px 0 0 #050504,4px 4px 0 0 #050504,5px 5px 0 0 #050504,
+    6px 6px 0 0 #050504,7px 7px 0 0 #050504,8px 8px 0 0 #050504,9px 9px 0 0 #050504,10px 10px 0 0 #050504;
   min-height:80px;
   animation:slideUp .4s cubic-bezier(.33,1,.68,1) both;
-  margin-bottom:8px;
+  margin-bottom:14px;
 }
 
-/* ── SOURCE LEFT BORDER ── */
-.msg[data-type="twitch"]{border-left:3px solid #9146ff}
-.msg[data-type="youtube"],.msg[data-type="youtubeshorts"]{border-left:3px solid #e24b4a}
-.msg[data-type="x"],.msg[data-type="twitter"]{border-left:3px solid #edebe6}
-.msg[data-type="kick"]{border-left:3px solid #53fc18}
-.msg[data-type="discord"]{border-left:3px solid #5865f2}
-.msg[data-type="facebook"]{border-left:3px solid #1877f2}
-.msg[data-type="tiktok"]{border-left:3px solid #fe2c55}
+/* Chunky shadow + frame tint by source */
+.msg[data-type="twitch"]{
+  border-color:#6b3fd4;
+  box-shadow:
+    1px 1px 0 0 #4c1fa8,2px 2px 0 0 #4c1fa8,3px 3px 0 0 #4c1fa8,4px 4px 0 0 #4c1fa8,5px 5px 0 0 #4c1fa8,
+    6px 6px 0 0 #4c1fa8,7px 7px 0 0 #4c1fa8,8px 8px 0 0 #4c1fa8,9px 9px 0 0 #4c1fa8,10px 10px 0 0 #4c1fa8;
+}
+.msg[data-type="youtube"],.msg[data-type="youtubeshorts"]{
+  border-color:#c43d3c;
+  box-shadow:
+    1px 1px 0 0 #8f2524,2px 2px 0 0 #8f2524,3px 3px 0 0 #8f2524,4px 4px 0 0 #8f2524,5px 5px 0 0 #8f2524,
+    6px 6px 0 0 #8f2524,7px 7px 0 0 #8f2524,8px 8px 0 0 #8f2524,9px 9px 0 0 #8f2524,10px 10px 0 0 #8f2524;
+}
+.msg[data-type="x"],.msg[data-type="twitter"]{
+  border-color:#c9c7c1;
+  box-shadow:
+    1px 1px 0 0 #8a8883,2px 2px 0 0 #8a8883,3px 3px 0 0 #8a8883,4px 4px 0 0 #8a8883,5px 5px 0 0 #8a8883,
+    6px 6px 0 0 #8a8883,7px 7px 0 0 #8a8883,8px 8px 0 0 #8a8883,9px 9px 0 0 #8a8883,10px 10px 0 0 #8a8883;
+}
+.msg[data-type="kick"]{
+  border-color:#3dd816;
+  box-shadow:
+    1px 1px 0 0 #1f7a0c,2px 2px 0 0 #1f7a0c,3px 3px 0 0 #1f7a0c,4px 4px 0 0 #1f7a0c,5px 5px 0 0 #1f7a0c,
+    6px 6px 0 0 #1f7a0c,7px 7px 0 0 #1f7a0c,8px 8px 0 0 #1f7a0c,9px 9px 0 0 #1f7a0c,10px 10px 0 0 #1f7a0c;
+}
+.msg[data-type="discord"]{
+  border-color:#6b77f0;
+  box-shadow:
+    1px 1px 0 0 #3d46a8,2px 2px 0 0 #3d46a8,3px 3px 0 0 #3d46a8,4px 4px 0 0 #3d46a8,5px 5px 0 0 #3d46a8,
+    6px 6px 0 0 #3d46a8,7px 7px 0 0 #3d46a8,8px 8px 0 0 #3d46a8,9px 9px 0 0 #3d46a8,10px 10px 0 0 #3d46a8;
+}
+.msg[data-type="facebook"]{
+  border-color:#2a8ef5;
+  box-shadow:
+    1px 1px 0 0 #0d5cb8,2px 2px 0 0 #0d5cb8,3px 3px 0 0 #0d5cb8,4px 4px 0 0 #0d5cb8,5px 5px 0 0 #0d5cb8,
+    6px 6px 0 0 #0d5cb8,7px 7px 0 0 #0d5cb8,8px 8px 0 0 #0d5cb8,9px 9px 0 0 #0d5cb8,10px 10px 0 0 #0d5cb8;
+}
+.msg[data-type="tiktok"]{
+  border-color:#ff3d6d;
+  box-shadow:
+    1px 1px 0 0 #b30d35,2px 2px 0 0 #b30d35,3px 3px 0 0 #b30d35,4px 4px 0 0 #b30d35,5px 5px 0 0 #b30d35,
+    6px 6px 0 0 #b30d35,7px 7px 0 0 #b30d35,8px 8px 0 0 #b30d35,9px 9px 0 0 #b30d35,10px 10px 0 0 #b30d35;
+}
 
 /* ── AVATAR ── */
 .avatar-wrap{
   position:absolute;
-  top:0;left:-1px;
+  top:0;left:0;
   width:80px;height:80px;
-  background:#242423;
-  border:1px solid #2e2e2c;
-  border-radius:6px;
+  background:#1e1e1d;
+  border:2px solid #4a4946;
+  border-radius:50%;
   padding:2px;
+  overflow:hidden;
   z-index:3;
 }
 .avatar-wrap img{
   width:100%;height:100%;
   object-fit:cover;
-  border-radius:5px;
+  border-radius:50%;
   display:block;
 }
 
@@ -78,14 +117,14 @@ body{
   position:absolute;
   top:-14px;left:70px;
   max-width:calc(100% - 85px);
-  background:#242423;
-  border:1px solid #2e2e2c;
-  border-radius:4px;
-  padding:5px 12px;
+  background:#1a1918;
+  border:2px solid #5c5a55;
+  border-radius:6px;
+  padding:6px 12px;
   font-family:'Space Mono',monospace;
   font-weight:700;
   font-size:14px;
-  color:#f1c40f;
+  color:#ffd54a;
   text-transform:uppercase;
   letter-spacing:.04em;
   white-space:nowrap;
@@ -93,20 +132,26 @@ body{
   display:flex;
   align-items:center;
   gap:6px;
+  box-shadow:1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09,3px 3px 0 0 #0a0a09,4px 4px 0 0 #0a0a09;
 }
 
-/* Source-tinted name colors */
-.msg[data-type="twitch"] .name-tag{color:#c4a2ff;border-color:#3d2870;background:#1f1633}
-.msg[data-type="youtube"] .name-tag,.msg[data-type="youtubeshorts"] .name-tag{color:#f09595;border-color:#501313;background:#2a1212}
-.msg[data-type="x"] .name-tag,.msg[data-type="twitter"] .name-tag{color:#edebe6}
-.msg[data-type="kick"] .name-tag{color:#7bff50;border-color:#1a4010;background:#122a0c}
-.msg[data-type="discord"] .name-tag{color:#98a2f7;border-color:#2a2f6b;background:#181b3d}
-.msg[data-type="facebook"] .name-tag{color:#6aabf7;border-color:#0c3470;background:#0c1a33}
-.msg[data-type="tiktok"] .name-tag{color:#ff6b8a;border-color:#5c1128;background:#2a0c16}
+/* Source-tinted name colors (higher contrast fg/bg) */
+.msg[data-type="twitch"] .name-tag{color:#e4d4ff;border-color:#8b6fe6;background:#120a24;box-shadow:1px 1px 0 0 #2d1566,2px 2px 0 0 #2d1566,3px 3px 0 0 #2d1566,4px 4px 0 0 #2d1566}
+.msg[data-type="youtube"] .name-tag,.msg[data-type="youtubeshorts"] .name-tag{color:#ffc9c9;border-color:#a84848;background:#1a0808;box-shadow:1px 1px 0 0 #5c1818,2px 2px 0 0 #5c1818,3px 3px 0 0 #5c1818,4px 4px 0 0 #5c1818}
+.msg[data-type="x"] .name-tag,.msg[data-type="twitter"] .name-tag{color:#faf9f7;border-color:#8a8884;background:#222221;box-shadow:1px 1px 0 0 #3d3c3a,2px 2px 0 0 #3d3c3a,3px 3px 0 0 #3d3c3a,4px 4px 0 0 #3d3c3a}
+.msg[data-type="kick"] .name-tag{color:#b8ff9a;border-color:#2d8c18;background:#071a05;box-shadow:1px 1px 0 0 #0f4d08,2px 2px 0 0 #0f4d08,3px 3px 0 0 #0f4d08,4px 4px 0 0 #0f4d08}
+.msg[data-type="discord"] .name-tag{color:#d2d8ff;border-color:#6f7ae8;background:#0c0e22;box-shadow:1px 1px 0 0 #232a66,2px 2px 0 0 #232a66,3px 3px 0 0 #232a66,4px 4px 0 0 #232a66}
+.msg[data-type="facebook"] .name-tag{color:#b8dcff;border-color:#3d8eef;background:#061428;box-shadow:1px 1px 0 0 #0a3a72,2px 2px 0 0 #0a3a72,3px 3px 0 0 #0a3a72,4px 4px 0 0 #0a3a72}
+.msg[data-type="tiktok"] .name-tag{color:#ffb3c9;border-color:#e84870;background:#1a050c;box-shadow:1px 1px 0 0 #6a1028,2px 2px 0 0 #6a1028,3px 3px 0 0 #6a1028,4px 4px 0 0 #6a1028}
 
 /* Source-tinted avatars */
-.msg[data-type="twitch"] .avatar-wrap{border-color:#3d2870}
-.msg[data-type="youtube"] .avatar-wrap,.msg[data-type="youtubeshorts"] .avatar-wrap{border-color:#501313}
+.msg[data-type="twitch"] .avatar-wrap{border-color:#8b6fe6}
+.msg[data-type="youtube"] .avatar-wrap,.msg[data-type="youtubeshorts"] .avatar-wrap{border-color:#c45a5a}
+.msg[data-type="kick"] .avatar-wrap{border-color:#3dd816}
+.msg[data-type="discord"] .avatar-wrap{border-color:#6f7ae8}
+.msg[data-type="facebook"] .avatar-wrap{border-color:#3d8eef}
+.msg[data-type="tiktok"] .avatar-wrap{border-color:#ff3d6d}
+.msg[data-type="x"] .avatar-wrap,.msg[data-type="twitter"] .avatar-wrap{border-color:#a8a6a1}
 
 .name-text{display:inline-block;vertical-align:middle}
 .badges-inline{
@@ -153,18 +198,19 @@ body{
 .source-badge{
   font-family:'Space Mono',monospace;
   font-size:11px;
-  font-weight:400;
-  color:#6b6963;
-  letter-spacing:.02em;
+  font-weight:600;
+  color:#c9c6bc;
+  letter-spacing:.04em;
+  opacity:1;
 }
 
 /* ── MESSAGE TEXT ── */
 .msg-text{
   font-size:28px;
-  font-weight:400;
+  font-weight:500;
   line-height:1.45;
   letter-spacing:-.01em;
-  color:#edebe6;
+  color:#f7f6f2;
   word-break:break-word;
 }
 .msg-text{font-style:normal}
@@ -184,31 +230,43 @@ body{
   max-height:1.5em;
   max-width:1.5em;
 }
-.msg-text a{color:#2dd4bf;text-decoration:none}
+.msg-text a{color:#5eead4;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
 
 /* ── DONATION ── */
 .dono-badge{
   display:inline-block;
-  background:#f1c40f;
-  color:#111110;
+  background:#ffd54a;
+  color:#0a0a09;
   font-family:'Space Mono',monospace;
   font-weight:700;
   font-size:14px;
   text-transform:uppercase;
   letter-spacing:.06em;
-  padding:4px 10px;
-  border-radius:4px;
-  margin-top:8px;
+  padding:6px 12px;
+  border-radius:6px;
+  margin-top:10px;
+  border:2px solid #0a0a09;
+  box-shadow:1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09,3px 3px 0 0 #0a0a09,4px 4px 0 0 #0a0a09;
+}
+
+.dono-badge--membership{
+  background:#1a1918;
+  color:#ffd54a;
+  border:2px solid #ffd54a;
+  box-shadow:1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09,3px 3px 0 0 #0a0a09,4px 4px 0 0 #0a0a09;
 }
 
 /* ── CONTENT IMAGE ── */
 .content-img{
   max-width:40%;
   max-height:200px;
-  border-radius:6px;
-  border:1px solid #2e2e2c;
-  margin-top:8px;
+  border-radius:8px;
+  border:2px solid #454441;
+  margin-top:10px;
   display:block;
+  box-shadow:
+    1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09,3px 3px 0 0 #0a0a09,4px 4px 0 0 #0a0a09,5px 5px 0 0 #0a0a09,
+    6px 6px 0 0 #0a0a09;
 }
 
 /* ── ANIMATIONS ── */
@@ -337,7 +395,7 @@ body{
 
     /* Membership */
     if(data.membership && !donoHtml){
-      donoHtml = '<div class="dono-badge" style="background:#242423;color:#f1c40f;border:1px solid #2e2e2c">'+esc(data.membership)+'</div>';
+      donoHtml = '<div class="dono-badge dono-badge--membership">'+esc(data.membership)+'</div>';
     }
 
     var el = document.createElement('div');

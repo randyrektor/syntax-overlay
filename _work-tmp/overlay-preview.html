@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overlay message preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+/* Scene behind overlay (like a stream) */
+body{
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  min-height:100vh;
+  background:linear-gradient(145deg,#1a1530 0%,#0d0d12 45%,#151820 100%);
+  color:#f7f6f2;
+  -webkit-font-smoothing:antialiased;
+}
+#output{
+  position:absolute;
+  bottom:30px;
+  left:15px;
+  right:15px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+}
+/* Stepped shadows = connected extrusion (no corner gap). */
+.msg{
+  position:relative;
+  padding:22px 24px 22px 100px;
+  width:fit-content;
+  max-width:100%;
+  background:#141413;
+  border:2px solid #454441;
+  border-radius:8px;
+  box-shadow:
+    1px 1px 0 0 #050504,2px 2px 0 0 #050504,3px 3px 0 0 #050504,4px 4px 0 0 #050504,5px 5px 0 0 #050504,
+    6px 6px 0 0 #050504,7px 7px 0 0 #050504,8px 8px 0 0 #050504,9px 9px 0 0 #050504,10px 10px 0 0 #050504;
+  min-height:80px;
+  margin-bottom:14px;
+}
+.msg[data-type="twitch"]{
+  border-color:#6b3fd4;
+  box-shadow:
+    1px 1px 0 0 #4c1fa8,2px 2px 0 0 #4c1fa8,3px 3px 0 0 #4c1fa8,4px 4px 0 0 #4c1fa8,5px 5px 0 0 #4c1fa8,
+    6px 6px 0 0 #4c1fa8,7px 7px 0 0 #4c1fa8,8px 8px 0 0 #4c1fa8,9px 9px 0 0 #4c1fa8,10px 10px 0 0 #4c1fa8;
+}
+.avatar-wrap{
+  position:absolute;
+  top:0;left:0;
+  width:80px;height:80px;
+  background:#1e1e1d;
+  border:2px solid #4a4946;
+  border-radius:50%;
+  padding:2px;
+  overflow:hidden;
+  z-index:3;
+}
+.msg[data-type="twitch"] .avatar-wrap{border-color:#8b6fe6}
+.avatar-wrap img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+.name-tag{
+  position:absolute;
+  top:-14px;left:70px;
+  max-width:calc(100% - 85px);
+  background:#1a1918;
+  border:2px solid #5c5a55;
+  border-radius:6px;
+  padding:6px 12px;
+  font-family:'Space Mono',monospace;
+  font-weight:700;
+  font-size:14px;
+  color:#ffd54a;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  white-space:nowrap;
+  z-index:4;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  box-shadow:1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09,3px 3px 0 0 #0a0a09,4px 4px 0 0 #0a0a09;
+}
+.msg[data-type="twitch"] .name-tag{color:#e4d4ff;border-color:#8b6fe6;background:#120a24;box-shadow:1px 1px 0 0 #2d1566,2px 2px 0 0 #2d1566,3px 3px 0 0 #2d1566,4px 4px 0 0 #2d1566}
+.name-text{display:inline-block;vertical-align:middle}
+.source-badge{
+  font-family:'Space Mono',monospace;
+  font-size:11px;
+  font-weight:600;
+  color:#c9c6bc;
+  letter-spacing:.04em;
+}
+.msg-text{
+  font-size:28px;
+  font-weight:500;
+  line-height:1.45;
+  letter-spacing:-.01em;
+  color:#f7f6f2;
+  word-break:break-word;
+}
+.msg-text a{color:#5eead4;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
+.preview-note{
+  position:fixed;
+  top:16px;
+  left:16px;
+  font-family:'Space Mono',monospace;
+  font-size:12px;
+  color:#8a879c;
+  max-width:320px;
+  line-height:1.5;
+}
+</style>
+</head>
+<body>
+<p class="preview-note">Static sample — same markup/CSS as index.html overlay (Twitch example).</p>
+<div id="output">
+  <div class="msg" data-type="twitch">
+    <div class="avatar-wrap">
+      <img src="https://i.pravatar.cc/160?u=syntaxdemo" width="160" height="160" alt="">
+    </div>
+    <div class="name-tag">
+      <span class="name-text">_WESBOS()</span>
+      <span class="source-badge">#twitch</span>
+    </div>
+    <div class="msg-text">Hey chat — chunky shadows, no thin left stripe. Links look like <a href="#">this</a>.</div>
+  </div>
+</div>
+</body>
+</html>

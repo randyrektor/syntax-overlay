@@ -46,6 +46,38 @@ body.obs-mode #controls{display:none}
   text-transform:uppercase;
   color:#8a8883;
   margin-bottom:2px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.sync-status{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:'Space Mono',monospace;
+  font-size:10px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#6a6965;
+}
+.sync-status::before{
+  content:'';
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#5c5a55;
+  box-shadow:0 0 0 2px rgba(92,90,85,.18);
+  transition:background .15s ease,box-shadow .15s ease;
+}
+.sync-status[data-state="connected"]{color:#7be09a}
+.sync-status[data-state="connected"]::before{background:#3dd816;box-shadow:0 0 0 2px rgba(61,216,22,.22)}
+.sync-status[data-state="connecting"],
+.sync-status[data-state="reconnecting"]{color:#ffd54a}
+.sync-status[data-state="connecting"]::before,
+.sync-status[data-state="reconnecting"]::before{background:#ffd54a;box-shadow:0 0 0 2px rgba(255,213,74,.22);animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{
+  0%,100%{opacity:1}
+  50%{opacity:.45}
 }
 .person-row{
   display:flex;
@@ -266,7 +298,10 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
 <body>
 <div id="controls" aria-label="Lower third controls">
   <div class="controls-inner">
-    <div class="controls-title">Lower thirds — Syntax style</div>
+    <div class="controls-title">
+      <span>Lower thirds — Syntax style</span>
+      <span class="sync-status" id="sync-status" data-state="connecting" title="Connecting…">Connecting</span>
+    </div>
     <div class="person-row" data-person="cj">
       <label for="byline-cj">CJ</label>
       <input type="text" id="byline-cj" placeholder="Coding in the garden" autocomplete="off">
@@ -287,7 +322,7 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
       <input type="text" id="byline-randy" placeholder="Behind the scenes" autocomplete="off">
       <button type="button" class="btn-show" data-toggle="randy">Show</button>
     </div>
-    <p class="hint">OBS: add the same page with <kbd>?obs</kbd> for a transparent overlay (no buttons). Keys <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> toggle CJ / Scott / Wes / Randy · <kbd>Esc</kbd> hide. Auto-hides after 10s.</p>
+    <p class="hint">OBS: add the same page with <kbd>?obs</kbd> for a transparent overlay (no buttons). Triggers from this page sync over WebSocket to every connected overlay. Auto-hides after 10s. Use <kbd>?session=…</kbd> to scope to a specific room.</p>
   </div>
 </div>
 
@@ -328,8 +363,102 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
   var AUTO_HIDE_MS = 10000;
   var currentEl = null;
   var currentKey = null;
+  var currentOwned = false; /* did *this* tab initiate the show, or did it arrive via sync? */
   var exitTimer = null;
   var autoHideTimer = null;
+
+  /* ── SYNC: WebSocket relay so the controls page drives the OBS overlay (and any
+     additional connected operator pages stay in sync). Reuses the Social Stream
+     Ninja relay; messages are wrapped in `overlayNinja` so the chat overlay safely
+     ignores them (no chatmessage / contents / content fields). */
+  var SYNC_SESSION = params.get('session') || params.get('s') || params.get('room') || 'syntax-lower-thirds-default';
+  var SYNC_URL = params.get('server') || (params.has('localserver') ? 'ws://127.0.0.1:3000' : 'wss://io.socialstream.ninja');
+  /* The relay echoes our own broadcasts back. Tag every outgoing message so we can drop our own echoes. */
+  var TAB_ID = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+  var ws = null;
+  var wsReady = false;
+  var conCon = 1;
+  var reconnectTimer = null;
+  var statusEl = document.getElementById('sync-status');
+
+  function setSyncStatus(state, label){
+    if (!statusEl) return;
+    statusEl.setAttribute('data-state', state);
+    statusEl.textContent = label || state.charAt(0).toUpperCase() + state.slice(1);
+    statusEl.title = label || state;
+  }
+
+  function scheduleReconnect(){
+    if (reconnectTimer) return;
+    reconnectTimer = setTimeout(function(){
+      reconnectTimer = null;
+      conCon = Math.min(conCon + 1, 30);
+      connectSync();
+    }, Math.min(150 * conCon, 5000));
+  }
+
+  function connectSync(){
+    if (reconnectTimer){ clearTimeout(reconnectTimer); reconnectTimer = null; }
+    setSyncStatus('connecting', 'Connecting');
+    try {
+      ws = new WebSocket(SYNC_URL);
+    } catch(e){
+      scheduleReconnect();
+      return;
+    }
+    ws.onopen = function(){
+      conCon = 1;
+      wsReady = true;
+      /* Use a dedicated peer channel (in == out == 7) so all connected clients (operator
+         pages + ?obs overlays) both publish and subscribe to the same stream. The default
+         SSN config (in:1or2, out:3) is asymmetric (dock→overlay), which doesn't relay
+         between two overlay-style clients. Channel 7 stays clear of chat traffic on 1/2/3. */
+      try { ws.send(JSON.stringify({ join: SYNC_SESSION, in: 7, out: 7 })); } catch(e){}
+      setSyncStatus('connected', 'Live');
+    };
+    ws.onmessage = function(e){
+      if (!e.data) return;
+      try {
+        var d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        handleSyncMessage(d);
+      } catch(err){}
+    };
+    ws.onclose = function(){
+      wsReady = false;
+      setSyncStatus('reconnecting', 'Reconnecting');
+      scheduleReconnect();
+    };
+    ws.onerror = function(){
+      try { ws.close(); } catch(e){}
+    };
+  }
+
+  function broadcast(payload){
+    if (!wsReady || !ws) return;
+    try {
+      payload._tab = TAB_ID;
+      ws.send(JSON.stringify({ overlayNinja: { syntaxLT: payload } }));
+    } catch(e){}
+  }
+
+  function handleSyncMessage(d){
+    if (!d || typeof d !== 'object') return;
+    if ('overlayNinja' in d) d = d.overlayNinja;
+    if (!d || typeof d !== 'object' || !d.syntaxLT) return;
+    var msg = d.syntaxLT;
+    if (!msg || typeof msg !== 'object') return;
+    if (msg._tab === TAB_ID) return; /* ignore our own echo */
+
+    if (msg.action === 'show' && msg.person && PEOPLE[msg.person]){
+      if (typeof msg.byline === 'string'){
+        var inp = document.getElementById('byline-' + msg.person);
+        if (inp) inp.value = msg.byline;
+      }
+      showLowerThird(msg.person, { silent: true, byline: typeof msg.byline === 'string' ? msg.byline : undefined });
+    } else if (msg.action === 'hide'){
+      hideLowerThird(undefined, false, { silent: true });
+    }
+  }
 
   var toggleButtons = {};
   document.querySelectorAll('.btn-show[data-toggle]').forEach(function(btn){
@@ -359,6 +488,9 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
     clearAutoHide();
     autoHideTimer = setTimeout(function(){
       autoHideTimer = null;
+      /* Only the originating tab broadcasts the auto-hide so we don't get N×duplicates
+         when multiple operator pages are open. Receivers run their own timers silently. */
+      if (currentOwned) broadcast({ action: 'hide' });
       hideLowerThird();
     }, AUTO_HIDE_MS);
   }
@@ -404,11 +536,12 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
     }, EXIT_MS);
   }
 
-  function showLowerThird(key){
+  function showLowerThird(key, opts){
+    opts = opts || {};
     var p = PEOPLE[key];
     if (!p) return;
 
-    var byline = getByline(key);
+    var byline = (typeof opts.byline === 'string') ? opts.byline : getByline(key);
     var nextHtml =
       '<div class="lt-root" data-person="' + esc(key) + '">' +
         '<div class="lt-avatar"><img src="' + esc(p.avatar) + '" alt=""></div>' +
@@ -422,19 +555,23 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
       stage.innerHTML = nextHtml;
       currentEl = stage.querySelector('.lt-root');
       currentKey = key;
+      currentOwned = !opts.silent;
       syncButtons();
       startAutoHide();
     };
 
     if (currentEl && currentEl.parentNode) {
-      hideLowerThird(replace, true);
+      hideLowerThird(replace, true, { silent: true });
     } else {
       replace();
     }
+
+    if (!opts.silent) broadcast({ action: 'show', person: key, byline: byline });
   }
 
   function togglePerson(key){
     if (currentKey === key) {
+      broadcast({ action: 'hide' });
       hideLowerThird();
     } else {
       showLowerThird(key);
@@ -447,14 +584,7 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
     });
   });
 
-  document.addEventListener('keydown', function(e){
-    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
-    if (e.key === '1') togglePerson('cj');
-    else if (e.key === '2') togglePerson('scott');
-    else if (e.key === '3') togglePerson('wes');
-    else if (e.key === '4') togglePerson('randy');
-    else if (e.key === 'Escape') hideLowerThird();
-  });
+  connectSync();
 })();
 </script>
 </body>

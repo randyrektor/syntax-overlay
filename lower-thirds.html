@@ -143,7 +143,8 @@ body.obs-mode #controls{display:none}
 .person-row[data-person="wes"] .btn-show{background:#c4b5fd;color:#1a1028}
 .person-row[data-person="randy"] .btn-show{background:#ff9b7a;color:#28100a}
 
-/* Toggle state: button reverts to "Hide" styling regardless of person color. */
+/* When a person's lower third is live, their button shifts to a neutral
+   "Hide" treatment regardless of the person tint. */
 .btn-show.is-hide,
 .person-row[data-person="cj"] .btn-show.is-hide,
 .person-row[data-person="scott"] .btn-show.is-hide,
@@ -190,12 +191,13 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
   align-items:flex-start;
 }
 
-/* ── LOWER THIRD STACK (avatar pasted top-left over chunky card) ── */
+/* ── LOWER THIRD CARD (avatar bleeds out the top-left of the card) ── */
 .lt-root{
   position:relative;
   display:inline-block;
   max-width:min(92vw,560px);
-  /* Padding leaves room for avatar bleed (top + slight left) without clipping the drop-shadow. */
+  /* Padding reserves room for the avatar to bleed out the top-left without
+     clipping the drop-shadow under it. */
   padding:64px 0 6px 8px;
   animation:ltIn .42s cubic-bezier(.33,1,.68,1) both;
 }
@@ -203,9 +205,9 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
   animation:ltOut .45s cubic-bezier(.55,0,.68,.06) forwards;
 }
 
-/* Avatar: raw SVG clipping — no frame; sits “pasted” over the card’s top-left.
-   All SVGs are now true 360x360 with the face/eyes/chin in the same place, so a single
-   width + position works for all hosts. */
+/* The host SVGs in assets/lower-thirds/ are all authored to a 360×360
+   canvas with the face placed in the same relative position, so one set
+   of width + offset values works for every person. */
 .lt-avatar{
   position:absolute;
   z-index:2;
@@ -363,17 +365,23 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
   var AUTO_HIDE_MS = 10000;
   var currentEl = null;
   var currentKey = null;
-  var currentOwned = false; /* did *this* tab initiate the show, or did it arrive via sync? */
+  var currentOwned = false;  /* true if this tab initiated the current show */
   var exitTimer = null;
   var autoHideTimer = null;
 
-  /* ── SYNC: WebSocket relay so the controls page drives the OBS overlay (and any
-     additional connected operator pages stay in sync). Reuses the Social Stream
-     Ninja relay; messages are wrapped in `overlayNinja` so the chat overlay safely
-     ignores them (no chatmessage / contents / content fields). */
+  /* ── SYNC ──
+     The operator panel and the OBS overlay are the same page in different
+     modes. They reach each other through the Social Stream Ninja relay,
+     joined to a private session room on a dedicated peer channel
+     (in == out == 7). Payloads are wrapped in `overlayNinja.syntaxLT` so
+     featured-comment.html (chat overlay) ignores them cleanly.
+
+     SSN's default channel layout (in:1|2, out:3) is asymmetric and won't
+     relay between two overlay-style clients, so we use channel 7 instead. */
   var SYNC_SESSION = params.get('session') || params.get('s') || params.get('room') || 'syntax-lower-thirds-default';
   var SYNC_URL = params.get('server') || (params.has('localserver') ? 'ws://127.0.0.1:3000' : 'wss://io.socialstream.ninja');
-  /* The relay echoes our own broadcasts back. Tag every outgoing message so we can drop our own echoes. */
+  /* Per-tab id stamped on every outgoing message; the relay echoes our own
+     broadcasts back, so we filter them out by id on receive. */
   var TAB_ID = Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
   var ws = null;
   var wsReady = false;
@@ -409,10 +417,6 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
     ws.onopen = function(){
       conCon = 1;
       wsReady = true;
-      /* Use a dedicated peer channel (in == out == 7) so all connected clients (operator
-         pages + ?obs overlays) both publish and subscribe to the same stream. The default
-         SSN config (in:1or2, out:3) is asymmetric (dock→overlay), which doesn't relay
-         between two overlay-style clients. Channel 7 stays clear of chat traffic on 1/2/3. */
       try { ws.send(JSON.stringify({ join: SYNC_SESSION, in: 7, out: 7 })); } catch(e){}
       setSyncStatus('connected', 'Live');
     };
@@ -447,7 +451,7 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
     if (!d || typeof d !== 'object' || !d.syntaxLT) return;
     var msg = d.syntaxLT;
     if (!msg || typeof msg !== 'object') return;
-    if (msg._tab === TAB_ID) return; /* ignore our own echo */
+    if (msg._tab === TAB_ID) return;
 
     if (msg.action === 'show' && msg.person && PEOPLE[msg.person]){
       if (typeof msg.byline === 'string'){
@@ -488,8 +492,8 @@ body:not(.obs-mode) #stage-wrap{padding-top:140px}
     clearAutoHide();
     autoHideTimer = setTimeout(function(){
       autoHideTimer = null;
-      /* Only the originating tab broadcasts the auto-hide so we don't get N×duplicates
-         when multiple operator pages are open. Receivers run their own timers silently. */
+      /* Only the originating tab broadcasts the auto-hide; receivers run
+         their own timers silently to avoid N× duplicate hide events. */
       if (currentOwned) broadcast({ action: 'hide' });
       hideLowerThird();
     }, AUTO_HIDE_MS);

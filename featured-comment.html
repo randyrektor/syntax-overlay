@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="generator" content="Social Stream Ninja - Syntax.fm Theme">
-<!-- Custom overlay for Social Stream Ninja: same session id as dock/featured pages. See script header for upstream contract. -->
+<!-- Browser source for Social Stream Ninja featured comments. See script header for the upstream protocol contract. -->
 <title>Syntax.fm Chat Overlay</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -32,8 +32,9 @@ body{
   transition:transform .5s cubic-bezier(.25,.25,.105,1.2),opacity .5s ease;
 }
 
-/* ── MESSAGE CARD (chunky solid shadow; no thin left accent) ── */
-/* Stepped 1px box-shadows = connected extrusion (fills rounded-corner gap vs one offset layer). */
+/* ── MESSAGE CARD ── */
+/* Stepped 1px box-shadows form a connected extrusion that hugs the rounded
+   corners; a single offset shadow leaves a visible gap. */
 .msg{
   position:relative;
   padding:22px 24px 22px 100px;
@@ -50,7 +51,7 @@ body{
   margin-bottom:14px;
 }
 
-/* Chunky shadow + frame tint by source */
+/* Per-source frame tint (border + extruded shadow). */
 .msg[data-type="twitch"]{
   border-color:#6b3fd4;
   box-shadow:
@@ -140,7 +141,7 @@ body{
   white-space:nowrap;
 }
 
-/* Source-tinted name colors (higher contrast fg/bg) */
+/* Per-source name-tag color pair (foreground + tinted background). */
 .msg[data-type="twitch"] .name-tag{color:#e4d4ff;border-color:#8b6fe6;background:#120a24;box-shadow:1px 1px 0 0 #2d1566,2px 2px 0 0 #2d1566,3px 3px 0 0 #2d1566,4px 4px 0 0 #2d1566}
 .msg[data-type="youtube"] .name-tag,.msg[data-type="youtubeshorts"] .name-tag{color:#ffc9c9;border-color:#a84848;background:#1a0808;box-shadow:1px 1px 0 0 #5c1818,2px 2px 0 0 #5c1818,3px 3px 0 0 #5c1818,4px 4px 0 0 #5c1818}
 .msg[data-type="x"] .name-tag,.msg[data-type="twitter"] .name-tag{color:#faf9f7;border-color:#8a8884;background:#222221;box-shadow:1px 1px 0 0 #3d3c3a,2px 2px 0 0 #3d3c3a,3px 3px 0 0 #3d3c3a,4px 4px 0 0 #3d3c3a}
@@ -149,7 +150,7 @@ body{
 .msg[data-type="facebook"] .name-tag{color:#b8dcff;border-color:#3d8eef;background:#061428;box-shadow:1px 1px 0 0 #0a3a72,2px 2px 0 0 #0a3a72,3px 3px 0 0 #0a3a72,4px 4px 0 0 #0a3a72}
 .msg[data-type="tiktok"] .name-tag{color:#ffb3c9;border-color:#e84870;background:#1a050c;box-shadow:1px 1px 0 0 #6a1028,2px 2px 0 0 #6a1028,3px 3px 0 0 #6a1028,4px 4px 0 0 #6a1028}
 
-/* Source-tinted avatars */
+/* Per-source avatar ring color. */
 .msg[data-type="twitch"] .avatar-wrap{border-color:#8b6fe6}
 .msg[data-type="youtube"] .avatar-wrap,.msg[data-type="youtubeshorts"] .avatar-wrap{border-color:#c45a5a}
 .msg[data-type="kick"] .avatar-wrap{border-color:#3dd816}
@@ -175,7 +176,8 @@ body{
   display:inline-block;
   object-fit:contain;
 }
-/* Raw SVG badges ship huge width/height attrs; constrain like upstream themes */
+/* Inline SVG badges from SSN ship with intrinsic width/height attributes
+   that overflow the row. Constrain to a fixed badge height like upstream. */
 .badge-svg-wrap{
   display:inline-flex;
   align-items:center;
@@ -279,7 +281,8 @@ body{
   0%{opacity:0;transform:translateY(16px)}
   100%{opacity:1;transform:translateY(0)}
 }
-/* Exit: higher specificity than .msg (no !important). Cancels slideUp so transitions run. */
+/* The exit selector has higher specificity than .msg, so cancelling
+   `animation` here lets the transition properties below take over. */
 .msg.msg-exit{
   animation:none;
   opacity:0;
@@ -299,22 +302,25 @@ body{
 
   /*
    * Upstream contract (steveseguin/social_stream):
-   * - Dock / featured UI: operators pick or queue messages; the hub relays them to browser sources on the session room.
-   * - featured.html WebSocket default: JSON.stringify({ join: roomID, out: 3, in: 2 }) for featured-only; alternate mode uses in: 1.
-   *   We mirror that with featuredMode ? 2 : 1 and out: 3.
-   * - Clears / empty featured: the socket sends JSON false or empty content; featured.html maps that to processData({ contents: false }).
-   *   We unwrap overlayNinja, treat false/null the same way, and accept { contents: … } / { content: … } / action content like upstream.
-   * - P2P path: featured.html loads vdo.socialstream.ninja with label=overlay&exclude=<session>&room=<session>; we match that when using the iframe fallback.
-   * - Field outline for each message: https://github.com/steveseguin/social_stream/blob/main/README.md#message-structure
-   * - Theme URL pattern (session query): e.g. themes/rainbowpuke/readme.md in the same repo.
+   *   - Dock / featured UI: operators pick or queue messages; the hub relays
+   *     them to browser sources joined to the same session room.
+   *   - WebSocket join payload: { join: roomID, in: 2|1, out: 3 }. `in: 2`
+   *     receives only featured messages; `in: 1` receives the full chat
+   *     stream. We follow that with `featuredMode ? 2 : 1`.
+   *   - Clear events arrive as JSON `false` or empty content. Upstream maps
+   *     those to processData({ contents: false }); we accept the same plus
+   *     `{ content: … }` and action-style `{ action: 'content', value: … }`.
+   *   - P2P fallback path uses vdo.socialstream.ninja with
+   *     `label=overlay&exclude=<session>&room=<session>`.
+   *   - Message schema: https://github.com/steveseguin/social_stream#message-structure
    */
 
   /* ── CONFIG ── */
-  var featuredMode = true; /* true = only show clicked/featured messages; false = show all */
-  var maxStacked = 1; /* set >1 for stacked mode */
+  var featuredMode = true;  /* true = featured-only; false = full chat */
+  var maxStacked = 1;       /* >1 keeps multiple cards stacked at once */
 
   /* ── URL PARAMS ── */
-  /* Pairs with featured UI, e.g. https://beta.socialstream.ninja/featured.html?session=… */
+  /* The session id mirrors SSN's featured.html?session=… */
   var params = new URLSearchParams(location.search);
   var session = params.get('session') || params.get('s') || params.get('id') || params.get('room') || params.get('roomid') || '5mCxiEfhXc';
   var iframePassword = params.get('password') || params.get('pass') || params.get('pw') || 'false';
@@ -390,7 +396,7 @@ body{
     var img = data.chatimg||'';
     var srcLabel = sourceLabels[type]||'';
 
-    /* Build name display: _NAME() #source */
+    /* Display name format: _NAME_HERE() — a Syntax-style ident. */
     var nameClean = esc(name).replace(/\s+/g,'_').toUpperCase();
     var nameDisplay = nameClean ? '_'+nameClean+'()' : '';
     var nc = safeCssColor(data.nameColor);
@@ -398,22 +404,19 @@ body{
     var tc = safeCssColor(data.textColor);
     var badgesHtml = renderBadgesHtml(data.chatbadges);
 
-    /* Avatar */
     var avatarUrl = img || 'https://socialstream.ninja/sources/images/unknown.png';
 
-    /* Donation */
     var donoHtml = '';
     if(donationVal){
       donoHtml = '<div class="dono-badge">'+(data.title?esc(data.title)+': ':'')+esc(String(donationVal))+'</div>';
     }
 
-    /* Content image */
     var contentHtml = '';
     if(data.contentimg){
       contentHtml = '<img class="content-img" src="'+data.contentimg+'" onerror="this.style.display=\'none\'">';
     }
 
-    /* Membership */
+    /* Membership card falls back to the dono slot when no explicit donation. */
     if(data.membership && !donoHtml){
       donoHtml = '<div class="dono-badge dono-badge--membership">'+esc(data.membership)+'</div>';
     }
@@ -429,7 +432,6 @@ body{
       donoHtml+
       contentHtml;
 
-    /* Stacking or single */
     if(maxStacked <= 1){
       var prev = output.querySelector('.msg');
       if(prev){
@@ -448,7 +450,6 @@ body{
       }
     }
 
-    /* Auto-hide */
     if(showtime){
       setTimeout(function(){
         animateMsgExit(el);
@@ -458,7 +459,9 @@ body{
 
   var MSG_EXIT_MS = 520;
 
-  /* Kill entrance animation, then exit on next frames so transition actually runs. */
+  /* Cancel the entrance animation, force a reflow, then trigger the exit
+     transition on the next two frames so the browser registers the
+     start state before the transition begins. */
   function animateMsgExit(m, then){
     if(!m||!m.parentNode) return;
     if(m.classList.contains('msg-exit')){
@@ -496,7 +499,8 @@ body{
 
     if(data && typeof data==='object' && 'overlayNinja' in data) data = data.overlayNinja;
 
-    /* Featured clear sends JSON false / null; all branches below use "data &&" and would skip. */
+    /* Featured-clear arrives as JSON `false` / `null`; the branches below all
+       guard with `data && …` and would silently skip without this branch. */
     if(data===false||data===null){
       clearOutput();
       return;
@@ -588,7 +592,8 @@ body{
     wsUrl = params.get('server') || params.get('server2') || params.get('server3') || wsUrl;
     connect();
   } else {
-    /* Use BOTH methods for maximum compatibility */
+    /* Connect via both transports so the overlay works whether SSN is
+       reachable over the public relay or only via the P2P fallback. */
     connect();
     connectIframe();
   }

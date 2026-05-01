@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Syntax — Lower thirds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  min-height:100vh;
+  background:#0e0e0d;
+  color:#f7f6f2;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+body.obs-mode{background:#0000}
+body.obs-mode #controls{display:none}
+
+/* ── OPERATOR PANEL ── */
+#controls{
+  position:fixed;
+  top:0;left:0;right:0;
+  z-index:100;
+  padding:14px 16px 18px;
+  background:linear-gradient(180deg,rgba(14,14,13,.97) 0%,rgba(14,14,13,.88) 70%,transparent 100%);
+  border-bottom:1px solid #2a2a28;
+}
+.controls-inner{
+  max-width:920px;
+  margin:0 auto;
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px 16px;
+  align-items:flex-end;
+}
+.controls-title{
+  width:100%;
+  font-family:'Space Mono',monospace;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:#8a8883;
+  margin-bottom:2px;
+}
+.person-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 10px;
+  align-items:center;
+  flex:1 1 260px;
+  min-width:220px;
+  padding:10px 12px;
+  background:#141413;
+  border:2px solid #353431;
+  border-radius:8px;
+  box-shadow:1px 1px 0 0 #050504,2px 2px 0 0 #050504,3px 3px 0 0 #050504;
+}
+.person-row[data-person="cj"]{border-color:#b8894a}
+.person-row[data-person="scott"]{border-color:#4a9e8e}
+.person-row[data-person="wes"]{border-color:#8b7ec9}
+.person-row[data-person="randy"]{border-color:#e87b5a}
+
+.person-row label{
+  font-family:'Space Mono',monospace;
+  font-size:12px;
+  font-weight:700;
+  color:#ffd54a;
+  min-width:5rem;
+}
+.person-row[data-person="scott"] label{color:#9ee9dc}
+.person-row[data-person="wes"] label{color:#dcd4ff}
+.person-row[data-person="randy"] label{color:#ffc9b5}
+
+.person-row input[type="text"]{
+  flex:1 1 140px;
+  min-width:120px;
+  padding:8px 10px;
+  font-family:'Space Grotesk',sans-serif;
+  font-size:14px;
+  background:#1a1918;
+  border:2px solid #454441;
+  border-radius:6px;
+  color:#f7f6f2;
+}
+.person-row input[type="text"]::placeholder{color:#6a6965}
+
+.btn-show{
+  font-family:'Space Mono',monospace;
+  font-weight:700;
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  padding:8px 14px;
+  border-radius:6px;
+  border:2px solid #0a0a09;
+  cursor:pointer;
+  background:#ffd54a;
+  color:#0a0a09;
+  box-shadow:1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09,3px 3px 0 0 #0a0a09;
+  transition:transform .08s ease,box-shadow .08s ease;
+}
+.btn-show:hover{transform:translate(1px,1px);box-shadow:1px 1px 0 0 #0a0a09,2px 2px 0 0 #0a0a09}
+.btn-show:active{transform:translate(2px,2px);box-shadow:1px 1px 0 0 #0a0a09}
+
+.person-row[data-person="scott"] .btn-show{background:#5eead4;color:#0a0a09}
+.person-row[data-person="wes"] .btn-show{background:#c4b5fd;color:#1a1028}
+.person-row[data-person="randy"] .btn-show{background:#ff9b7a;color:#28100a}
+
+/* Toggle state: button reverts to "Hide" styling regardless of person color. */
+.btn-show.is-hide,
+.person-row[data-person="cj"] .btn-show.is-hide,
+.person-row[data-person="scott"] .btn-show.is-hide,
+.person-row[data-person="wes"] .btn-show.is-hide,
+.person-row[data-person="randy"] .btn-show.is-hide{
+  background:#1a1918;
+  color:#c9c6bc;
+  border-color:#5c5a55;
+}
+.btn-show.is-hide:hover{
+  background:#221f1c;
+  color:#f7f6f2;
+}
+.hint{
+  font-size:12px;
+  color:#6a6965;
+  width:100%;
+}
+.hint kbd{
+  font-family:'Space Mono',monospace;
+  font-size:11px;
+  padding:2px 6px;
+  border-radius:4px;
+  border:1px solid #454441;
+  background:#1a1918;
+}
+
+/* ── STAGE (overlay safe zone) ── */
+#stage-wrap{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  display:flex;
+  align-items:flex-end;
+  justify-content:flex-start;
+  padding:24px 24px 36px 24px;
+}
+body:not(.obs-mode) #stage-wrap{padding-top:140px}
+
+#stage{
+  pointer-events:none;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+}
+
+/* ── LOWER THIRD STACK (avatar pasted top-left over chunky card) ── */
+.lt-root{
+  position:relative;
+  display:inline-block;
+  max-width:min(92vw,560px);
+  /* Padding leaves room for avatar bleed (top + slight left) without clipping the drop-shadow. */
+  padding:64px 0 6px 8px;
+  animation:ltIn .42s cubic-bezier(.33,1,.68,1) both;
+}
+.lt-root.lt-exit{
+  animation:ltOut .45s cubic-bezier(.55,0,.68,.06) forwards;
+}
+
+/* Avatar: raw SVG clipping — no frame; sits “pasted” over the card’s top-left.
+   All SVGs are now true 360x360 with the face/eyes/chin in the same place, so a single
+   width + position works for all hosts. */
+.lt-avatar{
+  position:absolute;
+  z-index:2;
+  top:-30px;
+  left:-30px;
+  width:clamp(180px,26vw,230px);
+  pointer-events:none;
+  filter:drop-shadow(3px 4px 0 rgba(5,5,4,.65)) drop-shadow(0 1px 0 rgba(247,246,242,.06));
+}
+.lt-avatar img,.lt-avatar object{
+  width:100%;
+  height:auto;
+  display:block;
+}
+
+.lt-card{
+  position:relative;
+  z-index:1;
+  min-width:360px;
+  /* Left padding tracks the avatar so the name clears the photo. */
+  padding:14px 20px 14px clamp(128px,19vw,160px);
+  background:#141413;
+  border:2px solid #454441;
+  border-radius:8px;
+  box-shadow:
+    1px 1px 0 0 #050504,2px 2px 0 0 #050504,3px 3px 0 0 #050504,4px 4px 0 0 #050504,5px 5px 0 0 #050504,
+    6px 6px 0 0 #050504,7px 7px 0 0 #050504,8px 8px 0 0 #050504,9px 9px 0 0 #050504,10px 10px 0 0 #050504;
+}
+
+.lt-root[data-person="cj"] .lt-card{border-color:#d4a574}
+.lt-root[data-person="cj"] .lt-card{
+  box-shadow:
+    1px 1px 0 0 #6b4f32,2px 2px 0 0 #6b4f32,3px 3px 0 0 #6b4f32,4px 4px 0 0 #6b4f32,5px 5px 0 0 #6b4f32,
+    6px 6px 0 0 #6b4f32,7px 7px 0 0 #6b4f32,8px 8px 0 0 #6b4f32,9px 9px 0 0 #6b4f32,10px 10px 0 0 #6b4f32;
+}
+.lt-root[data-person="scott"] .lt-card{border-color:#4a9e8e}
+.lt-root[data-person="scott"] .lt-card{
+  box-shadow:
+    1px 1px 0 0 #25574d,2px 2px 0 0 #25574d,3px 3px 0 0 #25574d,4px 4px 0 0 #25574d,5px 5px 0 0 #25574d,
+    6px 6px 0 0 #25574d,7px 7px 0 0 #25574d,8px 8px 0 0 #25574d,9px 9px 0 0 #25574d,10px 10px 0 0 #25574d;
+}
+.lt-root[data-person="wes"] .lt-card{border-color:#8b7ec9}
+.lt-root[data-person="wes"] .lt-card{
+  box-shadow:
+    1px 1px 0 0 #4a3d7a,2px 2px 0 0 #4a3d7a,3px 3px 0 0 #4a3d7a,4px 4px 0 0 #4a3d7a,5px 5px 0 0 #4a3d7a,
+    6px 6px 0 0 #4a3d7a,7px 7px 0 0 #4a3d7a,8px 8px 0 0 #4a3d7a,9px 9px 0 0 #4a3d7a,10px 10px 0 0 #4a3d7a;
+}
+.lt-root[data-person="randy"] .lt-card{border-color:#e87b5a}
+.lt-root[data-person="randy"] .lt-card{
+  box-shadow:
+    1px 1px 0 0 #7a2f1a,2px 2px 0 0 #7a2f1a,3px 3px 0 0 #7a2f1a,4px 4px 0 0 #7a2f1a,5px 5px 0 0 #7a2f1a,
+    6px 6px 0 0 #7a2f1a,7px 7px 0 0 #7a2f1a,8px 8px 0 0 #7a2f1a,9px 9px 0 0 #7a2f1a,10px 10px 0 0 #7a2f1a;
+}
+
+.lt-display-name{
+  font-size:clamp(22px,4.2vw,32px);
+  font-weight:700;
+  line-height:1.1;
+  letter-spacing:-.02em;
+  color:#f7f6f2;
+  margin-bottom:4px;
+}
+
+.lt-byline{
+  font-size:clamp(15px,2.6vw,20px);
+  font-weight:500;
+  line-height:1.4;
+  color:#c9c6bc;
+  letter-spacing:-.01em;
+}
+
+.lt-byline:empty::before{
+  content:'—';
+  opacity:.35;
+}
+
+@keyframes ltIn{
+  0%{opacity:0;transform:translateY(18px)}
+  100%{opacity:1;transform:translateY(0)}
+}
+
+@keyframes ltOut{
+  0%{opacity:1;transform:translateY(0)}
+  100%{opacity:0;transform:translateY(28px)}
+}
+
+#stage:empty{display:none}
+</style>
+</head>
+<body>
+<div id="controls" aria-label="Lower third controls">
+  <div class="controls-inner">
+    <div class="controls-title">Lower thirds — Syntax style</div>
+    <div class="person-row" data-person="cj">
+      <label for="byline-cj">CJ</label>
+      <input type="text" id="byline-cj" placeholder="Coding in the garden" autocomplete="off">
+      <button type="button" class="btn-show" data-toggle="cj">Show</button>
+    </div>
+    <div class="person-row" data-person="scott">
+      <label for="byline-scott">Scott</label>
+      <input type="text" id="byline-scott" placeholder="Spins on head" autocomplete="off">
+      <button type="button" class="btn-show" data-toggle="scott">Show</button>
+    </div>
+    <div class="person-row" data-person="wes">
+      <label for="byline-wes">Wes</label>
+      <input type="text" id="byline-wes" placeholder="Hot tips incoming" autocomplete="off">
+      <button type="button" class="btn-show" data-toggle="wes">Show</button>
+    </div>
+    <div class="person-row" data-person="randy">
+      <label for="byline-randy">Randy</label>
+      <input type="text" id="byline-randy" placeholder="Behind the scenes" autocomplete="off">
+      <button type="button" class="btn-show" data-toggle="randy">Show</button>
+    </div>
+    <p class="hint">OBS: add the same page with <kbd>?obs</kbd> for a transparent overlay (no buttons). Keys <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> toggle CJ / Scott / Wes / Randy · <kbd>Esc</kbd> hide. Auto-hides after 10s.</p>
+  </div>
+</div>
+
+<div id="stage-wrap">
+  <div id="stage" aria-live="polite"></div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var PEOPLE = {
+    cj: {
+      name: 'CJ',
+      avatar: 'assets/lower-thirds/CJ.svg'
+    },
+    scott: {
+      name: 'Scott Tolinski',
+      avatar: 'assets/lower-thirds/Scott.svg'
+    },
+    wes: {
+      name: 'Wes Bos',
+      avatar: 'assets/lower-thirds/Wes.svg'
+    },
+    randy: {
+      name: 'Randy',
+      avatar: 'assets/lower-thirds/Randy.svg'
+    }
+  };
+
+  var params = new URLSearchParams(location.search);
+  if (params.has('obs') || params.has('overlay')) {
+    document.body.classList.add('obs-mode');
+  }
+
+  var stage = document.getElementById('stage');
+  var EXIT_MS = 480;
+  var AUTO_HIDE_MS = 10000;
+  var currentEl = null;
+  var currentKey = null;
+  var exitTimer = null;
+  var autoHideTimer = null;
+
+  var toggleButtons = {};
+  document.querySelectorAll('.btn-show[data-toggle]').forEach(function(btn){
+    toggleButtons[btn.getAttribute('data-toggle')] = btn;
+  });
+
+  function esc(s){
+    if (s == null || s === '') return '';
+    var d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  function getByline(key){
+    var inp = document.getElementById('byline-' + key);
+    return inp ? inp.value.trim() : '';
+  }
+
+  function clearAutoHide(){
+    if (autoHideTimer) {
+      clearTimeout(autoHideTimer);
+      autoHideTimer = null;
+    }
+  }
+
+  function startAutoHide(){
+    clearAutoHide();
+    autoHideTimer = setTimeout(function(){
+      autoHideTimer = null;
+      hideLowerThird();
+    }, AUTO_HIDE_MS);
+  }
+
+  function syncButtons(){
+    Object.keys(toggleButtons).forEach(function(key){
+      var btn = toggleButtons[key];
+      var active = key === currentKey;
+      btn.classList.toggle('is-hide', active);
+      btn.textContent = active ? 'Hide' : 'Show';
+    });
+  }
+
+  function hideLowerThird(then, immediate){
+    clearAutoHide();
+    if (exitTimer) {
+      clearTimeout(exitTimer);
+      exitTimer = null;
+    }
+    if (!currentEl || !currentEl.parentNode) {
+      currentEl = null;
+      currentKey = null;
+      syncButtons();
+      if (typeof then === 'function') then();
+      return;
+    }
+    var el = currentEl;
+    currentKey = null;
+    syncButtons();
+    if (immediate) {
+      if (el.parentNode) el.parentNode.removeChild(el);
+      currentEl = null;
+      if (typeof then === 'function') then();
+      return;
+    }
+    if (el.classList.contains('lt-exit')) return;
+    el.classList.add('lt-exit');
+    exitTimer = setTimeout(function(){
+      exitTimer = null;
+      if (el.parentNode) el.parentNode.removeChild(el);
+      if (currentEl === el) currentEl = null;
+      if (typeof then === 'function') then();
+    }, EXIT_MS);
+  }
+
+  function showLowerThird(key){
+    var p = PEOPLE[key];
+    if (!p) return;
+
+    var byline = getByline(key);
+    var nextHtml =
+      '<div class="lt-root" data-person="' + esc(key) + '">' +
+        '<div class="lt-avatar"><img src="' + esc(p.avatar) + '" alt=""></div>' +
+        '<div class="lt-card">' +
+          '<div class="lt-display-name">' + esc(p.name) + '</div>' +
+          '<div class="lt-byline">' + esc(byline) + '</div>' +
+        '</div>' +
+      '</div>';
+
+    var replace = function(){
+      stage.innerHTML = nextHtml;
+      currentEl = stage.querySelector('.lt-root');
+      currentKey = key;
+      syncButtons();
+      startAutoHide();
+    };
+
+    if (currentEl && currentEl.parentNode) {
+      hideLowerThird(replace, true);
+    } else {
+      replace();
+    }
+  }
+
+  function togglePerson(key){
+    if (currentKey === key) {
+      hideLowerThird();
+    } else {
+      showLowerThird(key);
+    }
+  }
+
+  Object.keys(toggleButtons).forEach(function(key){
+    toggleButtons[key].addEventListener('click', function(){
+      togglePerson(key);
+    });
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if (e.key === '1') togglePerson('cj');
+    else if (e.key === '2') togglePerson('scott');
+    else if (e.key === '3') togglePerson('wes');
+    else if (e.key === '4') togglePerson('randy');
+    else if (e.key === 'Escape') hideLowerThird();
+  });
+})();
+</script>
+</body>
+</html>
